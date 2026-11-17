@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0A0F0A"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="POSE-GUARD"
+        android:textColor="#00FF66"
+        android:textSize="26sp"
+        android:fontFamily="monospace"/>
+
+    <TextView
+        android:id="@+id/status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:padding="12dp"
+        android:background="#111811"
+        android:textColor="#00FF66"
+        android:textSize="13sp"
+        android:text="ready"/>
+
+    <Button android:id="@+id/btnPerm" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="16dp"
+        android:text="PERM"/>
+
+    <Button android:id="@+id/btnStart" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="START"/>
+
+    <Button android:id="@+id/btnStop" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="STOP"/>
+</LinearLayout>
