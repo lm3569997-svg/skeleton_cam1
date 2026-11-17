@@ -14,20 +14,72 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var status: TextView
 
-    override fun onCreate(s: Bundle?) {
-        super.onCreate(s)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
         status = findViewById(R.id.status)
-        val start = findViewById<Button>(R.id.btnStart)
-        val stop = findViewById<Button>(R.id.btnStop)
-        val perm = findViewById<Button>(R.id.btnPerm)
-        perm.setOnClickListener { requestPerms() }
-        start.setOnClickListener { doStart() }
-        stop.setOnClickListener {
-            stopService(Intent(this, CameraService::class.java)); refresh()
+        val btnStart = findViewById<Button>(R.id.btnStart)
+        val btnStop = findViewById<Button>(R.id.btnStop)
+        val btnPerm = findViewById<Button>(R.id.btnPerm)
+
+        btnPerm.setOnClickListener { requestPerms() }
+
+        btnStart.setOnClickListener {
+            if (!Settings.canDrawOverlays(this)) {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+                return@setOnClickListener
+            }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPerms()
+                return@setOnClickListener
+            }
+            ContextCompat.startForegroundService(
+                this, Intent(this, CameraService::class.java)
+            )
+            refresh()
         }
+
+        btnStop.setOnClickListener {
+            stopService(Intent(this, CameraService::class.java))
+            refresh()
+        }
+
         refresh()
+    }
+
+    private fun requestPerms() {
+        val list = mutableListOf(Manifest.permission.CAMERA)
+        if (Build.VERSION.SDK_INT >= 33) list.add(Manifest.permission.POST_NOTIFICATIONS)
+        ActivityCompat.requestPermissions(this, list.toTypedArray(), 100)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refresh()
+    }
+
+    private fun refresh() {
+        val ov = Settings.canDrawOverlays(this)
+        val cam = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
+                PackageManager.PERMISSION_GRANTED
+        val sb = StringBuilder()
+        sb.append("运行: ").append(if (CameraService.running) "是" else "否").append('\n')
+        sb.append("悬浮窗: ").append(if (ov) "已授权" else "未授权").append('\n')
+        sb.append("相机: ").append(if (cam) "已授权" else "未授权").append('\n')
+        sb.append("FPS: ").append(CameraService.lastFps).append('\n')
+        sb.append("目标: ").append(CameraService.lastCount)
+        CameraService.lastError?.let { sb.append('\n').append("错误: ").append(it) }
+        status.text = sb.toString()
     }
 }
