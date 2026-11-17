@@ -14,4 +14,5 @@ target_include_directories(poseguard PRIVATE ${CMAKE_SOURCE_DIR}/ncnn/include/nc
 target_link_libraries(poseguard
     ${NCNN_DIR}/libncnn.so
     android
+    jnigraphics
     log)
