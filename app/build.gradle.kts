@@ -30,7 +30,6 @@ android {
     kotlinOptions { jvmTarget = "17" }
 
     androidResources { noCompress += listOf("param", "bin") }
-    sourceSets["main"].jniLibs.srcDirs("src/main/jniLibs")
 }
 
 dependencies {
@@ -39,9 +38,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
     implementation("androidx.lifecycle:lifecycle-process:2.8.4")
     implementation("com.google.android.material:material:1.12.0")
+
     val camerax = "1.3.4"
     implementation("androidx.camera:camera-core:$camerax")
     implementation("androidx.camera:camera-camera2:$camerax")
     implementation("androidx.camera:camera-lifecycle:$camerax")
-    implementation("com.tencent.ncnn:ncnn-android-vulkan:20240102")
 }
