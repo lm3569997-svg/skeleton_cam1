@@ -11,9 +11,26 @@ android {
         applicationId = "com.poseguard.monitor"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-        ndk { abiFilters += listOf("arm64-v8a") }
+        versionCode = 2
+        versionName = "1.1"
+
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/jni/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {
@@ -30,6 +47,18 @@ android {
     kotlinOptions { jvmTarget = "17" }
 
     androidResources { noCompress += listOf("param", "bin") }
+
+    packaging {
+        jniLibs {
+            // libncnn.so 由 CMake 链接进来，这里保证它被打包
+            useLegacyPackaging = false
+        }
+    }
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jni/ncnn")
+        }
+    }
 }
 
 dependencies {

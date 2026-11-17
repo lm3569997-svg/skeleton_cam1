@@ -1,0 +1,2 @@
+app/src/main/assets/*.bin -text
+app/src/main/jni/ncnn/**/*.so -text
