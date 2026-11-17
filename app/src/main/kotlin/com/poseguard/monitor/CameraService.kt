@@ -39,7 +39,7 @@ class CameraService : LifecycleService() {
     private var frameCount = 0
     private var fpsMark = 0L
 
-    override fun onBind(intent: Intent?): IBinder? {
+    override fun onBind(intent: Intent): IBinder? {
         super.onBind(intent)
         return null
     }
