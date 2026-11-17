@@ -97,16 +97,18 @@ class CameraService : LifecycleService() {
                             val dm = resources.displayMetrics
                             val sx = dm.widthPixels.toFloat() / img.width
                             val sy = dm.heightPixels.toFloat() / img.height
-                            overlayCtl?.attach()?.post {
-                                val v = overlayCtl?.attach() ?: return@post
-                                v.persons = persons.map { p ->
-                                    Person(
-                                        p.left * sx, p.top * sy, p.right * sx, p.bottom * sy, p.conf,
-                                        p.kps.map { Keypoint(it.x * sx, it.y * sy, it.conf) }
-                                    )
+                            val v = overlayCtl?.attach()
+                            if (v != null) {
+                                v.post {
+                                    v.persons = persons.map { p ->
+                                        Person(
+                                            p.left * sx, p.top * sy, p.right * sx, p.bottom * sy, p.conf,
+                                            p.kps.map { Keypoint(it.x * sx, it.y * sy, it.conf) }
+                                        )
+                                    }
+                                    v.setFps(lastFps)
+                                    v.invalidate()
                                 }
-                                v.setFps(lastFps)
-                                v.invalidate()
                             }
                         }
                     } catch (t: Throwable) {
@@ -125,14 +127,14 @@ class CameraService : LifecycleService() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private fun buildNotification() = run {
+    private fun buildNotification(): android.app.Notification {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             nm.createNotificationChannel(
                 NotificationChannel(CH_ID, "PoseGuard", NotificationManager.IMPORTANCE_LOW)
             )
         }
-        NotificationCompat.Builder(this, CH_ID)
+        return NotificationCompat.Builder(this, CH_ID)
             .setContentTitle("PoseGuard 运行中")
             .setContentText("相机识别 + 骨架标注")
             .setSmallIcon(android.R.drawable.ic_menu_camera)
