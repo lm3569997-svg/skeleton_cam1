@@ -19,6 +19,13 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
     @Volatile
     var fps: Int = 0
 
+    /** 推理帧的尺寸，用来把像素坐标换算到屏幕 */
+    @Volatile
+    private var srcW: Int = 0
+
+    @Volatile
+    private var srcH: Int = 0
+
     @Volatile
     var message: String? = null
 
@@ -53,9 +60,11 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
         isAntiAlias = true
     }
 
-    fun update(list: List<Person>, fpsNow: Int) {
+    fun update(list: List<Person>, fpsNow: Int, srcWidth: Int, srcHeight: Int) {
         persons = list
         fps = fpsNow
+        srcW = srcWidth
+        srcH = srcHeight
         invalidate()
     }
 
@@ -75,6 +84,10 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
         if (scanY > h) scanY = 0f
         canvas.drawLine(0f, scanY, w, scanY, scanPaint)
 
+        // 画面到屏幕的缩放（保持比例，居中裁切）
+        val sx = if (srcW > 0) w / srcW else 1f
+        val sy = if (srcH > 0) h / srcH else 1f
+
         persons.forEach { p ->
             val color = Landmarks.COLORS[p.id % Landmarks.COLORS.size]
 
@@ -86,7 +99,7 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
                 if (!p.has(a) || !p.has(b)) continue
                 val pa = p.kps[a]
                 val pb = p.kps[b]
-                canvas.drawLine(pa.x * w, pa.y * h, pb.x * w, pb.y * h, linePaint)
+                canvas.drawLine(pa.x * sx, pa.y * sy, pb.x * sx, pb.y * sy, linePaint)
             }
 
             // 关节点
@@ -94,14 +107,14 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
             for (i in 0 until Landmarks.COUNT) {
                 if (!p.has(i)) continue
                 val k = p.kps[i]
-                canvas.drawCircle(k.x * w, k.y * h, 7f, dotPaint)
+                canvas.drawCircle(k.x * sx, k.y * sy, 7f, dotPaint)
             }
 
             // 外框
             boxPaint.color = color
             canvas.drawRect(
-                p.box[0] * w, p.box[1] * h,
-                p.box[2] * w, p.box[3] * h,
+                p.box[0] * sx, p.box[1] * sy,
+                p.box[2] * sx, p.box[3] * sy,
                 boxPaint
             )
 
@@ -109,8 +122,8 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
             textPaint.color = color
             canvas.drawText(
                 "#${p.id} ${(p.score * 100).toInt()}%",
-                p.box[0] * w,
-                (p.box[1] * h - 10f).coerceAtLeast(30f),
+                p.box[0] * sx,
+                (p.box[1] * sy - 10f).coerceAtLeast(30f),
                 textPaint
             )
         }

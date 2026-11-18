@@ -113,9 +113,11 @@ class CameraService : LifecycleService() {
                             val persons = det.detect(bmp)
                             lastCount = if (persons.isEmpty()) 0 else persons.size
 
-                            // 坐标已是归一化的 [0,1]，悬浮窗直接乘屏幕尺寸
+                            // kps 与 box 都是原始帧的像素坐标，悬浮窗按屏幕比例换算
+                            val bw = bmp.width
+                            val bh = bmp.height
                             overlay?.post {
-                                overlay?.update(persons, lastFps)
+                                overlay?.update(persons, lastFps, bw, bh)
                             }
                         }
                         bmp.recycle()

@@ -11,8 +11,24 @@ android {
         applicationId = "com.poseguard.lite"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "2.0"
+
+        ndk { abiFilters += listOf("arm64-v8a") }
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/jni/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildTypes {
@@ -28,9 +44,12 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
 
-    androidResources {
-        // .task / .onnx 已经是压缩过的二进制，别再压
-        noCompress += listOf("onnx", "task", "tflite")
+    androidResources { noCompress += listOf("param", "bin", "onnx", "task") }
+
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jni/ncnn")
+        }
     }
 }
 
@@ -45,7 +64,4 @@ dependencies {
     implementation("androidx.camera:camera-core:$camerax")
     implementation("androidx.camera:camera-camera2:$camerax")
     implementation("androidx.camera:camera-lifecycle:$camerax")
-
-    // ONNX Runtime Android，纯 Kotlin API，无需 JNI/NDK
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 }
