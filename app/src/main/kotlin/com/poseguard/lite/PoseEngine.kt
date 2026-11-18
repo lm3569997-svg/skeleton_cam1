@@ -58,7 +58,6 @@ class PoseEngine(private val ctx: Context) {
                     .setMinPoseDetectionConfidence(0.35f)
                     .setMinPosePresenceConfidence(0.35f)
                     .setMinTrackingConfidence(0.35f)
-                    .setOutputSegmentationMasks(false)
                     .build()
             )
             ready = true
@@ -95,7 +94,7 @@ class PoseEngine(private val ctx: Context) {
                     val x = n.x().coerceIn(0f, 1f)
                     val y = n.y().coerceIn(0f, 1f)
                     kps.add(PointF(x, y))
-                    conf[i] = n.visibility().orElse(0f)
+                    conf[i] = if (n.visibility().isPresent) n.visibility().get() else 0f
                     if (conf[i] >= 0.4f) {
                         minX = min(minX, x); maxX = max(maxX, x)
                         minY = min(minY, y); maxY = max(maxY, y)
