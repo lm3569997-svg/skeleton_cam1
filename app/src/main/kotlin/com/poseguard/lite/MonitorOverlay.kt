@@ -59,7 +59,7 @@ class MonitorOverlay(ctx: Context) : View(ctx) {
         invalidate()
     }
 
-    fun setMessage(m: String?) {
+    fun showMessage(m: String?) {
         message = m
         invalidate()
     }

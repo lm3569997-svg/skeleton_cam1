@@ -65,13 +65,13 @@ class CameraService : LifecycleService() {
         val e = PoseEngine(this)
         if (!e.init()) {
             lastError = e.error() ?: "模型加载失败"
-            overlay?.setMessage(lastError)
+            overlay?.showMessage(lastError)
             running = false
         } else {
             engine = e
             running = true
             lastError = null
-            overlay?.setMessage(null)
+            overlay?.showMessage(null)
             bindCamera()
         }
         return START_STICKY
@@ -116,7 +116,7 @@ class CameraService : LifecycleService() {
                         bmp.recycle()
                     } catch (t: Throwable) {
                         lastError = "${t.javaClass.simpleName}: ${t.message}"
-                        overlay?.post { overlay?.setMessage(lastError) }
+                        overlay?.post { overlay?.showMessage(lastError) }
                     } finally {
                         img.close()
                         busy.set(false)
@@ -127,7 +127,7 @@ class CameraService : LifecycleService() {
                 provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
             } catch (t: Throwable) {
                 lastError = "相机启动失败: ${t.message}"
-                overlay?.post { overlay?.setMessage(lastError) }
+                overlay?.post { overlay?.showMessage(lastError) }
             }
         }, ContextCompat.getMainExecutor(this))
     }
