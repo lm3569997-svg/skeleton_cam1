@@ -159,6 +159,9 @@ class CameraService : LifecycleService() {
 /** 目前固定用后置，前置需要镜像时把这里改成 true */
 private const val IS_FRONT = false
 
+/** 竖屏使用时摄像头帧需要旋转的角度 */
+private const val UPRIGHT_DEGREES = 90
+
 /** YUV_420_888 → NV21 → JPEG → Bitmap，并摆正到竖屏 */
 fun ImageProxy.toUprightBitmap(): Bitmap {
     val y = planes[0]
@@ -176,9 +179,10 @@ fun ImageProxy.toUprightBitmap(): Bitmap {
     val bytes = out.toByteArray()
     val raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 
-    // 旋转到竖屏：摄像头出的是横向帧，转 90 度
+    // 摄像头传感器方向是横向的，竖屏使用时需要转 90 度
+    // ImageAnalysis 的 targetRotation 设为 ROTATION_0 时，出帧就是 90 度转过的
     val m = Matrix().apply {
-        postRotate(rotationDegrees.toFloat())
+        postRotate(UPRIGHT_DEGREES.toFloat())
         // 后置不做水平镜像；前置要让画面和悬浮窗对齐，需镜像
         if (IS_FRONT) {
             postScale(-1f, 1f)
