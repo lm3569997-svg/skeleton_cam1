@@ -1,1 +1,1 @@
--keep class com.tencent.ncnn.** { *; }
+-keep class com.google.mediapipe.** { *; }

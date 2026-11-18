@@ -16,5 +16,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PoseGuard"
+rootProject.name = "PoseGuardLite"
 include(":app")

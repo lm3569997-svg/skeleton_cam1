@@ -1,4 +1,4 @@
-package com.poseguard.monitor
+package com.poseguard.lite
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
+import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.YuvImage
 import android.os.Build
@@ -24,8 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 class CameraService : LifecycleService() {
 
     companion object {
-        const val CH_ID = "poseguard"
+        const val CH_ID = "poseguard_lite"
         const val NOTI_ID = 1001
+
         @Volatile var running = false
         @Volatile var lastFps = 0
         @Volatile var lastCount = 0
@@ -34,8 +36,10 @@ class CameraService : LifecycleService() {
 
     private val inferExec = Executors.newSingleThreadExecutor()
     private val busy = AtomicBoolean(false)
-    private var detector: PoseDetector? = null
+    private var engine: PoseEngine? = null
     private var overlayCtl: OverlayController? = null
+    private var overlay: MonitorOverlay? = null
+
     private var frameCount = 0
     private var fpsMark = 0L
 
@@ -48,21 +52,28 @@ class CameraService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         startForeground(NOTI_ID, buildNotification())
 
-        val od = OverlayController(this)
-        od.attach()
-        overlayCtl = od
+        val ctl = OverlayController(this)
+        overlay = ctl.attach()
+        overlayCtl = ctl
 
-        val det = PoseDetector(this)
-        if (!det.init()) {
-            lastError = det.error() ?: "模型加载失败"
-            running = false
+        if (overlay == null) {
+            lastError = "悬浮窗未授权：设置 → 应用 → 显示在其他应用上层"
         } else {
             lastError = null
-            detector = det
         }
 
-        bindCamera()
-        running = true
+        val e = PoseEngine(this)
+        if (!e.init()) {
+            lastError = e.error() ?: "模型加载失败"
+            overlay?.setMessage(lastError)
+            running = false
+        } else {
+            engine = e
+            running = true
+            lastError = null
+            overlay?.setMessage(null)
+            bindCamera()
+        }
         return START_STICKY
     }
 
@@ -74,6 +85,7 @@ class CameraService : LifecycleService() {
                 val analysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+                    .setTargetRotation(android.view.Surface.ROTATION_0)
                     .build()
 
                 analysis.setAnalyzer(inferExec) { img ->
@@ -84,35 +96,27 @@ class CameraService : LifecycleService() {
                         frameCount = 0
                         fpsMark = now
                     }
+
                     if (!busy.compareAndSet(false, true)) {
                         img.close()
                         return@setAnalyzer
                     }
                     try {
-                        val bmp = img.toBitmap()
-                        val det = detector
+                        val bmp = img.toUprightBitmap()
+                        val det = engine
                         if (det != null) {
                             val persons = det.detect(bmp)
                             lastCount = persons.size
-                            val dm = resources.displayMetrics
-                            val sx = dm.widthPixels.toFloat() / img.width
-                            val sy = dm.heightPixels.toFloat() / img.height
-                            val v = overlayCtl?.attach()
-                            if (v != null) {
-                                v.post {
-                                    v.persons = persons.map { p ->
-                                        Person(
-                                            p.left * sx, p.top * sy, p.right * sx, p.bottom * sy, p.conf,
-                                            p.kps.map { Keypoint(it.x * sx, it.y * sy, it.conf) }
-                                        )
-                                    }
-                                    v.setFps(lastFps)
-                                    v.invalidate()
-                                }
+
+                            // 画框前把 MediaPipe 的归一化坐标镜像回来（后置镜像没有，前置才需要）
+                            overlay?.post {
+                                overlay?.update(persons, lastFps)
                             }
                         }
+                        bmp.recycle()
                     } catch (t: Throwable) {
                         lastError = "${t.javaClass.simpleName}: ${t.message}"
+                        overlay?.post { overlay?.setMessage(lastError) }
                     } finally {
                         img.close()
                         busy.set(false)
@@ -123,6 +127,7 @@ class CameraService : LifecycleService() {
                 provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, analysis)
             } catch (t: Throwable) {
                 lastError = "相机启动失败: ${t.message}"
+                overlay?.post { overlay?.setMessage(lastError) }
             }
         }, ContextCompat.getMainExecutor(this))
     }
@@ -131,12 +136,12 @@ class CameraService : LifecycleService() {
         val nm = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             nm.createNotificationChannel(
-                NotificationChannel(CH_ID, "PoseGuard", NotificationManager.IMPORTANCE_LOW)
+                NotificationChannel(CH_ID, "PoseGuard Lite", NotificationManager.IMPORTANCE_LOW)
             )
         }
         return NotificationCompat.Builder(this, CH_ID)
-            .setContentTitle("PoseGuard 运行中")
-            .setContentText("相机识别 + 骨架标注")
+            .setContentTitle("PoseGuard Lite 运行中")
+            .setContentText("MediaPipe 姿态识别 + 悬浮骨架")
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setOngoing(true)
             .build()
@@ -145,23 +150,41 @@ class CameraService : LifecycleService() {
     override fun onDestroy() {
         running = false
         overlayCtl?.detach()
-        detector?.release()
+        engine?.release()
         inferExec.shutdownNow()
         super.onDestroy()
     }
 }
 
-fun ImageProxy.toBitmap(): Bitmap {
+/** 目前固定用后置，前置需要镜像时把这里改成 true */
+private const val IS_FRONT = false
+
+/** YUV_420_888 → NV21 → JPEG → Bitmap，并摆正到竖屏 */
+fun ImageProxy.toUprightBitmap(): Bitmap {
     val y = planes[0]
     val u = planes[1]
     val v = planes[2]
+
     val nv21 = ByteArray(y.buffer.remaining() + u.buffer.remaining() + v.buffer.remaining())
     y.buffer.get(nv21, 0, y.buffer.remaining())
     v.buffer.get(nv21, y.buffer.remaining(), v.buffer.remaining())
     u.buffer.get(nv21, y.buffer.remaining() + v.buffer.remaining(), u.buffer.remaining())
+
     val yuv = YuvImage(nv21, ImageFormat.NV21, width, height, null)
     val out = ByteArrayOutputStream()
-    yuv.compressToJpeg(Rect(0, 0, width, height), 82, out)
-    val b = out.toByteArray()
-    return BitmapFactory.decodeByteArray(b, 0, b.size)
+    yuv.compressToJpeg(Rect(0, 0, width, height), 85, out)
+    val bytes = out.toByteArray()
+    val raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+
+    // 旋转到竖屏：摄像头出的是横向帧，转 90 度
+    val m = Matrix().apply {
+        postRotate(rotationDegrees.toFloat())
+        // 后置不做水平镜像；前置要让画面和悬浮窗对齐，需镜像
+        if (IS_FRONT) {
+            postScale(-1f, 1f)
+        }
+    }
+    val fixed = Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, m, true)
+    if (fixed !== raw) raw.recycle()
+    return fixed
 }

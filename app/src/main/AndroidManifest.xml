@@ -11,11 +11,14 @@
 
     <application
         android:allowBackup="true"
-        android:label="PoseGuard"
+        android:label="PoseGuard Lite"
         android:supportsRtl="true"
         android:theme="@style/Theme.PoseGuard">
 
-        <activity android:name=".MainActivity" android:exported="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -26,6 +29,6 @@
             android:name=".CameraService"
             android:exported="false"
             android:foregroundServiceType="camera" />
-
     </application>
+
 </manifest>

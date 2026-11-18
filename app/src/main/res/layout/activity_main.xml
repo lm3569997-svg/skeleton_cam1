@@ -1,37 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#0A0F0A"
-    android:padding="20dp">
+    android:background="#101014"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="POSE-GUARD"
-        android:textColor="#00FF66"
-        android:textSize="26sp"
-        android:fontFamily="monospace"/>
-
-    <TextView
-        android:id="@+id/status"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:padding="12dp"
-        android:background="#111811"
-        android:textColor="#00FF66"
-        android:textSize="13sp"
-        android:text="ready"/>
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <Button android:id="@+id/btnPerm" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:layout_marginTop="16dp"
-        android:text="PERM"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PoseGuard Lite"
+            android:textColor="#00FF66"
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
-    <Button android:id="@+id/btnStart" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:text="START"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="MediaPipe Pose Landmarker · 悬浮骨架标注"
+            android:textColor="#8899A6"
+            android:textSize="13sp" />
 
-    <Button android:id="@+id/btnStop" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:text="STOP"/>
-</LinearLayout>
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="#1A1A22"
+            android:fontFamily="monospace"
+            android:padding="14dp"
+            android:textColor="#E0E0E0"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="开始识别" />
+
+        <Button
+            android:id="@+id/btnStop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="停止" />
+
+        <Button
+            android:id="@+id/btnPerm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="申请权限" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="使用说明\n\n1. 先点「申请权限」授予相机和通知\n2. 到 设置 → 应用 → PoseGuard Lite → 显示在其他应用上层，允许悬浮窗\n3. 点「开始识别」，切到别的应用也能看到骨架\n4. 状态栏「目标」是从 0 开始累加的场景中人数"
+            android:textColor="#667788"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</ScrollView>
