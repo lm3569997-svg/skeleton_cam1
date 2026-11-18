@@ -1,1 +1,1 @@
--keep class com.google.mediapipe.** { *; }
+-keep class ai.onnxruntime.** { *; }

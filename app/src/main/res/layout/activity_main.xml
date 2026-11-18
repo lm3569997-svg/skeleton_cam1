@@ -23,7 +23,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="MediaPipe Pose Landmarker · 悬浮骨架标注"
+            android:text="YOLO11n-pose · ONNX Runtime · 悬浮骨架标注"
             android:textColor="#8899A6"
             android:textSize="13sp" />
 

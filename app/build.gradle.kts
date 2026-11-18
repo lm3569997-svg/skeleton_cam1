@@ -30,7 +30,7 @@ android {
 
     androidResources {
         // .task / .onnx 已经是压缩过的二进制，别再压
-        noCompress += listOf("task", "onnx", "tflite")
+        noCompress += listOf("onnx", "task", "tflite")
     }
 }
 
@@ -46,6 +46,6 @@ dependencies {
     implementation("androidx.camera:camera-camera2:$camerax")
     implementation("androidx.camera:camera-lifecycle:$camerax")
 
-    // MediaPipe Pose Landmarker，纯 Kotlin API，无需自己写 JNI
-    implementation("com.google.mediapipe:tasks-vision:0.10.14")
+    // ONNX Runtime Android，纯 Kotlin API，无需 JNI/NDK
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.20.0")
 }

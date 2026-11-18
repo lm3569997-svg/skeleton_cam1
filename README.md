@@ -1,37 +1,40 @@
 # PoseGuard Lite
 
-重写版：**MediaPipe Pose Landmarker** 做骨骼识别 + 悬浮窗标注。
+相机 + 悬浮窗骨架标注。识别用 **YOLO11n-pose**，推理用 **ONNX Runtime**（纯 Kotlin，无需 JNI / NDK）。
 
-和老版本的区别：
+## 数据流
 
-| | 老版本（ncnn） | 本版本（MediaPipe） |
-|---|---|---|
-| 推理 | 自己写 JNI 调 libncnn.so | 官方 Kotlin API，一行 `createFromOptions` |
-| 模型 | 需要从 PyTorch 导出 ncnn | 官方 `.task` 文件，直接放 assets |
-| 后处理 | 自己解析 [56,8400] | 返回已归一化的 33 个关键点 |
-| 编译 | 需要 NDK + CMake | 纯 Kotlin，无需 NDK |
-| 失败点 | 输入名/通道数/letterbox 全要自己对齐 | 基本没有 |
+```
+CameraX 出帧 (YUV_420_888)
+  → NV21 → JPEG → Bitmap → 旋转 90° 摆正
+  → letterbox 到 640×640（补黑边）
+  → ARGB → NCHW float[0,1]
+  → ORT 推理 images → output0 [1,56,8400]
+  → 通道优先解码：cx,cy,w,h,conf + 17×3 关键点
+  → 置信度过滤 + NMS + 反 letterbox
+  → 归一化坐标 → 悬浮窗绘制
+```
+
+## 关键常量
+
+| 项 | 值 |
+|---|---|
+| 输入名 | `images` |
+| 输出名 | `output0` |
+| 输入尺寸 | 640×640 |
+| 输出形状 | [1, 56, 8400] |
+| 关键点 | 17 个 COCO 顺序 |
+| conf 阈值 | 0.28 |
+| NMS IoU | 0.45 |
 
 ## 构建
 
-推送到 GitHub，workflow 自动出 `PoseGuardLite-debug`。
-
-本地：
-
-```bash
-./gradlew assembleDebug
-```
+推送到 GitHub 触发 workflow，或本地 `./gradlew assembleDebug`。
 
 ## 安装后
 
-1. 点「申请权限」→ 允许相机、通知
-2. 设置 → 应用 → PoseGuard Lite → **显示在其他应用上层** → 允许
+1. 点「申请权限」→ 相机、通知
+2. 设置 → 应用 → PoseGuard Lite → 显示在其他应用上层 → 允许
 3. 点「开始识别」
-4. 状态栏会显示 FPS 和检测到的人数
 
-## 关键文件
-
-- `PoseEngine.kt` — MediaPipe 封装，`detect()` 返回归一化关键点
-- `MonitorOverlay.kt` — 悬浮窗绘制，33 点骨架 + 连线 + 每人不同颜色
-- `CameraService.kt` — CameraX 取帧 → 旋转摆正 → 推理 → 更新悬浮窗
-- `assets/pose_landmarker_lite.task` — 官方模型（5.6MB）
+状态栏会显示 FPS、目标人数，以及「引擎：推理 N 帧 / 有人 M 帧」——这行能直接看出是没检测到还是没绘制。

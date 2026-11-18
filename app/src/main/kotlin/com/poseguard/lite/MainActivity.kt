@@ -83,7 +83,8 @@ class MainActivity : AppCompatActivity() {
         sb.append("悬浮窗: ").append(if (ov) "已授权" else "未授权").append('\n')
         sb.append("相机 : ").append(if (cam) "已授权" else "未授权").append('\n')
         sb.append("FPS  : ").append(CameraService.lastFps).append('\n')
-        sb.append("目标 : ").append(CameraService.lastCount)
+        sb.append("目标 : ").append(CameraService.lastCount).append('\n')
+        sb.append("引擎 : ").append(CameraService.lastStats())
         CameraService.lastError?.let { sb.append("\n错误 : ").append(it) }
         status.text = sb.toString()
     }

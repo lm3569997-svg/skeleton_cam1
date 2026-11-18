@@ -32,6 +32,10 @@ class CameraService : LifecycleService() {
         @Volatile var lastFps = 0
         @Volatile var lastCount = 0
         @Volatile var lastError: String? = null
+
+        @Volatile private var engineRef: PoseEngine? = null
+
+        fun lastStats(): String = engineRef?.stats() ?: "未启动"
     }
 
     private val inferExec = Executors.newSingleThreadExecutor()
@@ -69,6 +73,7 @@ class CameraService : LifecycleService() {
             running = false
         } else {
             engine = e
+            engineRef = e
             running = true
             lastError = null
             overlay?.showMessage(null)
@@ -106,9 +111,9 @@ class CameraService : LifecycleService() {
                         val det = engine
                         if (det != null) {
                             val persons = det.detect(bmp)
-                            lastCount = persons.size
+                            lastCount = if (persons.isEmpty()) 0 else persons.size
 
-                            // 画框前把 MediaPipe 的归一化坐标镜像回来（后置镜像没有，前置才需要）
+                            // 坐标已是归一化的 [0,1]，悬浮窗直接乘屏幕尺寸
                             overlay?.post {
                                 overlay?.update(persons, lastFps)
                             }
@@ -141,7 +146,7 @@ class CameraService : LifecycleService() {
         }
         return NotificationCompat.Builder(this, CH_ID)
             .setContentTitle("PoseGuard Lite 运行中")
-            .setContentText("MediaPipe 姿态识别 + 悬浮骨架")
+            .setContentText("YOLO11 姿态识别 + 悬浮骨架")
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setOngoing(true)
             .build()
@@ -151,6 +156,7 @@ class CameraService : LifecycleService() {
         running = false
         overlayCtl?.detach()
         engine?.release()
+        engineRef = null
         inferExec.shutdownNow()
         super.onDestroy()
     }
